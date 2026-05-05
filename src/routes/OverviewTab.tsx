@@ -1,4 +1,4 @@
-import { Globe2, CalendarDays, Users, MapPin, Pencil } from 'lucide-react';
+import { Globe2, CalendarDays, Users, MapPin } from 'lucide-react';
 import type { TripWithMembers } from '@/types/domain';
 import { formatDateRange } from '@/lib/date';
 import { Avatar } from '@/components/ui/Avatar';

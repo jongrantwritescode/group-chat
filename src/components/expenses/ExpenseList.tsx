@@ -2,8 +2,6 @@ import { useMemo } from 'react';
 import type { Expense } from '@/types/domain';
 import { formatDate } from '@/lib/date';
 import { formatCents } from '@/lib/money';
-import { Avatar } from '@/components/ui/Avatar';
-import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Receipt } from 'lucide-react';
 

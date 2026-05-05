@@ -5,14 +5,27 @@ import type { Database } from '@/types/database';
 type TripInsert = Database['public']['Tables']['trips']['Insert'];
 type TripUpdate = Database['public']['Tables']['trips']['Update'];
 
-export async function fetchTrips(): Promise<Trip[]> {
+/**
+ * Fetch all trips the current user is a member of.
+ * Member details are intentionally not fetched here (N+1 avoidance);
+ * instead, member_count is embedded via a count aggregate so TripCard
+ * can display the member count without a separate request.
+ */
+export async function fetchTrips(): Promise<(Trip & { member_count: number })[]> {
   const { data, error } = await supabase
     .from('trips')
-    .select('*')
+    .select('*, trip_members(count)')
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data as Trip[];
+
+  // Supabase returns count as [{ count: N }] — unwrap to a plain number
+  return (data as unknown as Array<Trip & { trip_members: [{ count: number }] }>).map(
+    (row) => ({
+      ...row,
+      member_count: row.trip_members?.[0]?.count ?? 0,
+    }),
+  );
 }
 
 export async function fetchTrip(tripId: string): Promise<TripWithMembers> {
@@ -70,10 +83,14 @@ export async function deleteTrip(tripId: string): Promise<void> {
 }
 
 export async function uploadCover(tripId: string, file: Blob): Promise<string> {
-  const path = `${tripId}/cover-${Date.now()}.jpg`;
+  // Use the blob's actual MIME type so Storage metadata is correct (PNG, JPEG, HEIC, etc.)
+  const contentType = file.type || 'image/jpeg';
+  const ext = contentType.split('/')[1]?.replace('jpeg', 'jpg') ?? 'jpg';
+  const path = `${tripId}/cover-${Date.now()}.${ext}`;
+
   const { error: uploadError } = await supabase.storage
     .from('trip-covers')
-    .upload(path, file, { upsert: true, contentType: 'image/jpeg' });
+    .upload(path, file, { upsert: true, contentType });
 
   if (uploadError) throw uploadError;
 

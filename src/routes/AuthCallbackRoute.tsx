@@ -7,8 +7,6 @@ export function AuthCallbackRoute() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const url = window.location.href;
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const searchParams = new URLSearchParams(window.location.search);
 
     const code = searchParams.get('code');
@@ -20,6 +18,17 @@ export function AuthCallbackRoute() {
       return;
     }
 
+    function redirectAfterLogin() {
+      // Consume any pending invite token saved before the OAuth redirect
+      const pendingToken = sessionStorage.getItem('pendingInviteToken');
+      if (pendingToken) {
+        sessionStorage.removeItem('pendingInviteToken');
+        navigate(`/invite/${pendingToken}`, { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
+    }
+
     if (code) {
       supabase.auth
         .exchangeCodeForSession(code)
@@ -28,7 +37,7 @@ export function AuthCallbackRoute() {
             console.error('Session exchange error:', error);
             navigate('/login');
           } else {
-            navigate('/', { replace: true });
+            redirectAfterLogin();
           }
         });
       return;
@@ -37,7 +46,7 @@ export function AuthCallbackRoute() {
     // Fallback: check if already authenticated
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate('/', { replace: true });
+        redirectAfterLogin();
       } else {
         navigate('/login', { replace: true });
       }

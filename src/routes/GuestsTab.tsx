@@ -24,13 +24,14 @@ export function GuestsTab({ tripId, currentUserId, canManage }: GuestsTabProps) 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [rsvpLoadingId, setRsvpLoadingId] = useState<string | null>(null);
 
-  async function handleInvite(email: string, role: TripRole) {
+  async function handleInvite(email: string, role: TripRole): Promise<string> {
     try {
-      await inviteMember.mutateAsync({ email, role, invitedBy: currentUserId });
-      addToast(`Invitation sent to ${email}`, 'success');
-      setInviteOpen(false);
-    } catch (err) {
-      addToast('Failed to send invitation', 'error');
+      const token = await inviteMember.mutateAsync({ email, role, invitedBy: currentUserId });
+      addToast(`Invitation created for ${email}`, 'success');
+      return token;
+    } catch {
+      addToast('Failed to create invitation', 'error');
+      throw new Error('Failed to create invitation');
     }
   }
 

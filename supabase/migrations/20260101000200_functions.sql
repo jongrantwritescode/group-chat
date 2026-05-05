@@ -114,10 +114,12 @@ create or replace function public.accept_trip_invite(_token text)
   set search_path = public
 as $$
 declare
-  v_trip uuid;
-  v_role public.trip_role;
+  v_trip      uuid;
+  v_role      public.trip_role;
+  v_invite_email citext;
+  v_user_email   text;
 begin
-  select trip_id, role into v_trip, v_role
+  select trip_id, role, email into v_trip, v_role, v_invite_email
   from public.trip_invites
   where token = _token
     and accepted_at is null
@@ -125,6 +127,15 @@ begin
 
   if v_trip is null then
     raise exception 'invalid_or_expired_invite';
+  end if;
+
+  -- Verify the accepting user's email matches the invite email (case-insensitive)
+  select email into v_user_email
+  from auth.users
+  where id = auth.uid();
+
+  if lower(v_user_email) <> lower(v_invite_email::text) then
+    raise exception 'email_mismatch';
   end if;
 
   insert into public.trip_members (trip_id, user_id, role)
@@ -187,5 +198,54 @@ begin
   from jsonb_array_elements(_shares) s;
 
   return v_id;
+end;
+$$;
+
+-- ============================================================
+-- Atomic expense update (amount, metadata + shares)
+-- ============================================================
+create or replace function public.update_expense(
+  _expense_id   uuid,
+  _amount_cents bigint,
+  _currency     char(3),
+  _category     public.expense_category,
+  _description  text,
+  _occurred_on  date,
+  _split_method public.split_method,
+  _shares       jsonb   -- [{user_id: uuid, share_cents: bigint}]
+)
+  returns void
+  language plpgsql
+  security invoker
+as $$
+declare
+  v_total bigint;
+begin
+  select sum((s ->> 'share_cents')::bigint)
+  into v_total
+  from jsonb_array_elements(_shares) s;
+
+  if v_total <> _amount_cents then
+    raise exception 'shares_do_not_sum';
+  end if;
+
+  update public.expenses set
+    amount_cents  = _amount_cents,
+    currency      = _currency,
+    category      = _category,
+    description   = _description,
+    occurred_on   = _occurred_on,
+    split_method  = _split_method
+  where id = _expense_id;
+
+  -- Delete existing shares and re-insert atomically
+  delete from public.expense_shares where expense_id = _expense_id;
+
+  insert into public.expense_shares (expense_id, user_id, share_cents)
+  select
+    _expense_id,
+    (s ->> 'user_id')::uuid,
+    (s ->> 'share_cents')::bigint
+  from jsonb_array_elements(_shares) s;
 end;
 $$;

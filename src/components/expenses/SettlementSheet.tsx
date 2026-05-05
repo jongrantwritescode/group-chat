@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,15 +9,20 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Button } from '@/components/ui/Button';
 import type { TripMember } from '@/types/domain';
 
-const settlementSchema = z.object({
-  from_user: z.string().min(1, 'Required'),
-  to_user: z.string().min(1, 'Required'),
-  amount: z.string().min(1, 'Amount is required').refine(
-    (v) => !isNaN(parseFloat(v)) && parseFloat(v) > 0,
-    'Amount must be positive',
-  ),
-  note: z.string().optional(),
-});
+const settlementSchema = z
+  .object({
+    from_user: z.string().min(1, 'Required'),
+    to_user: z.string().min(1, 'Required'),
+    amount: z.string().min(1, 'Amount is required').refine(
+      (v) => !isNaN(parseFloat(v)) && parseFloat(v) > 0,
+      'Amount must be positive',
+    ),
+    note: z.string().optional(),
+  })
+  .refine((d) => d.from_user !== d.to_user, {
+    message: 'Cannot record a payment to yourself',
+    path: ['to_user'],
+  });
 
 type SettlementFormValues = z.infer<typeof settlementSchema>;
 
@@ -50,6 +56,13 @@ export function SettlementSheet({
     label: m.profile?.display_name ?? m.user_id,
   }));
 
+  const buildDefaults = () => ({
+    from_user: defaultFromUser ?? currentUserId,
+    to_user: defaultToUser ?? '',
+    amount: suggestedAmount ? (suggestedAmount / 100).toFixed(2) : '',
+    note: '',
+  });
+
   const {
     register,
     handleSubmit,
@@ -57,15 +70,17 @@ export function SettlementSheet({
     formState: { errors },
   } = useForm<SettlementFormValues>({
     resolver: zodResolver(settlementSchema),
-    defaultValues: {
-      from_user: defaultFromUser ?? currentUserId,
-      to_user: defaultToUser ?? '',
-      amount: suggestedAmount ? (suggestedAmount / 100).toFixed(2) : '',
-    },
+    defaultValues: buildDefaults(),
   });
 
+  // Reset form when prop defaults change (e.g. sheet re-used with different debtor)
+  useEffect(() => {
+    reset(buildDefaults());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultFromUser, defaultToUser, suggestedAmount]);
+
   function handleClose() {
-    reset();
+    reset(buildDefaults());
     onClose();
   }
 

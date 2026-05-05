@@ -60,7 +60,7 @@ create table public.trip_invites (
   trip_id     uuid not null references public.trips(id) on delete cascade,
   email       citext not null,
   role        public.trip_role not null default 'member',
-  token       text not null unique default encode(gen_random_bytes(24), 'base64'),
+  token       text not null unique default encode(gen_random_bytes(24), 'base64url'),
   invited_by  uuid not null references public.profiles(id),
   accepted_at timestamptz,
   expires_at  timestamptz not null default (now() + interval '14 days'),
@@ -147,7 +147,11 @@ create index tasks_trip_status_idx on public.tasks(trip_id, status, due_date);
 -- ============================================================
 -- Balance view
 -- ============================================================
-create or replace view public.trip_balances as
+-- security_invoker = true ensures RLS on underlying tables is applied when the view is queried,
+-- preventing any authenticated user from reading balance data for trips they are not a member of.
+create or replace view public.trip_balances
+  with (security_invoker = true)
+as
 select
   t.id as trip_id,
   p.id as user_id,

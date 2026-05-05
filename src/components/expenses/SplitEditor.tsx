@@ -1,9 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { TripMember, SplitMethod, ShareInput } from '@/types/domain';
-import { formatCents, splitEqually } from '@/lib/money';
+import { formatCents, splitEqually, splitByPercentage } from '@/lib/money';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/Avatar';
-import { Input } from '@/components/ui/Input';
 
 type SplitMode = 'equal' | 'exact' | 'percentage';
 
@@ -11,11 +10,10 @@ interface SplitEditorProps {
   totalCents: number;
   currency: string;
   members: TripMember[];
-  value: ShareInput[];
   onChange: (shares: ShareInput[], method: SplitMethod) => void;
 }
 
-export function SplitEditor({ totalCents, currency, members, value, onChange }: SplitEditorProps) {
+export function SplitEditor({ totalCents, currency, members, onChange }: SplitEditorProps) {
   const [mode, setMode] = useState<SplitMode>('equal');
   const [selectedIds, setSelectedIds] = useState<string[]>(
     members.map((m) => m.user_id),
@@ -23,41 +21,49 @@ export function SplitEditor({ totalCents, currency, members, value, onChange }: 
   const [exactValues, setExactValues] = useState<Record<string, string>>({});
   const [percentValues, setPercentValues] = useState<Record<string, string>>({});
 
+  // Keep onChange in a ref so the useEffect doesn't need it as a dependency
+  // (avoids infinite loop when parent creates a new function reference each render)
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  });
+
   // Recompute shares whenever inputs change
   useEffect(() => {
     if (totalCents <= 0 || selectedIds.length === 0) return;
 
     let shares: ShareInput[] = [];
+    let method: SplitMethod;
 
     if (mode === 'equal') {
-      const amounts = splitEqually(totalCents, selectedIds.length);
+      const amounts = splitEqually(totalCents, selectedIds.length, currency);
       shares = selectedIds.map((id, i) => ({ user_id: id, share_cents: amounts[i] }));
+      method = 'equal';
     } else if (mode === 'exact') {
       shares = selectedIds.map((id) => ({
         user_id: id,
         share_cents: Math.round(parseFloat(exactValues[id] ?? '0') * 100) || 0,
       }));
-    } else if (mode === 'percentage') {
+      method = 'exact';
+    } else {
+      // percentage mode — use splitByPercentage which handles rounding correctly
       const pcts = selectedIds.map((id) => parseFloat(percentValues[id] ?? '0') || 0);
       const total = pcts.reduce((a, b) => a + b, 0);
+      method = 'percentage';
       if (Math.abs(total - 100) < 0.01) {
-        shares = selectedIds.map((id, i) => ({
-          user_id: id,
-          share_cents: Math.round((totalCents * pcts[i]) / 100),
-        }));
-        // Fix rounding
-        const shareSum = shares.reduce((a, b) => a + b.share_cents, 0);
-        if (shareSum !== totalCents && shares.length > 0) {
-          shares[0].share_cents += totalCents - shareSum;
+        try {
+          const amounts = splitByPercentage(totalCents, pcts, currency);
+          shares = selectedIds.map((id, i) => ({ user_id: id, share_cents: amounts[i] }));
+        } catch {
+          shares = selectedIds.map((id) => ({ user_id: id, share_cents: 0 }));
         }
       } else {
         shares = selectedIds.map((id) => ({ user_id: id, share_cents: 0 }));
       }
     }
 
-    const method: SplitMethod = mode === 'equal' ? 'equal' : mode === 'exact' ? 'exact' : 'percentage';
-    onChange(shares, method);
-  }, [mode, selectedIds, exactValues, percentValues, totalCents]);
+    onChangeRef.current(shares, method);
+  }, [mode, selectedIds, exactValues, percentValues, totalCents, currency]);
 
   const toggleMember = (userId: string) => {
     setSelectedIds((prev) =>
@@ -75,6 +81,11 @@ export function SplitEditor({ totalCents, currency, members, value, onChange }: 
     (sum, id) => sum + (parseFloat(percentValues[id] ?? '0') || 0),
     0,
   );
+
+  // Pre-computed shares for display in equal mode (uses dinero allocate, not Math.floor)
+  const equalShares = mode === 'equal' && totalCents > 0 && selectedIds.length > 0
+    ? splitEqually(totalCents, selectedIds.length, currency)
+    : [];
 
   return (
     <div className="flex flex-col gap-3">
@@ -103,6 +114,7 @@ export function SplitEditor({ totalCents, currency, members, value, onChange }: 
           const profile = member.profile;
           const name = profile?.display_name ?? 'Unknown';
           const isSelected = selectedIds.includes(member.user_id);
+          const selectedIndex = selectedIds.indexOf(member.user_id);
 
           return (
             <div
@@ -125,10 +137,9 @@ export function SplitEditor({ totalCents, currency, members, value, onChange }: 
                 <div className="flex-shrink-0">
                   {mode === 'equal' && (
                     <span className="text-sm text-slate-600">
-                      {formatCents(
-                        Math.floor(totalCents / (selectedIds.length || 1)),
-                        currency,
-                      )}
+                      {equalShares[selectedIndex] !== undefined
+                        ? formatCents(equalShares[selectedIndex], currency)
+                        : formatCents(0, currency)}
                     </span>
                   )}
                   {mode === 'exact' && (
@@ -177,7 +188,8 @@ export function SplitEditor({ totalCents, currency, members, value, onChange }: 
             Math.abs(percentTotal - 100) < 0.01 ? 'text-green-600' : 'text-red-600',
           )}
         >
-          Total: {percentTotal.toFixed(1)}% {Math.abs(percentTotal - 100) < 0.01 ? '✓' : '(must be 100%)'}
+          Total: {percentTotal.toFixed(1)}%{' '}
+          {Math.abs(percentTotal - 100) < 0.01 ? '✓' : '(must be 100%)'}
         </div>
       )}
     </div>

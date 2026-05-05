@@ -1,18 +1,26 @@
 import { supabase } from '@/lib/supabase';
 import type { Expense, Settlement, TripBalance, ShareInput } from '@/types/domain';
-import type { Database } from '@/types/database';
-
-type ExpenseUpdate = Database['public']['Tables']['expenses']['Update'];
 
 export interface CreateExpenseInput {
   tripId: string;
   paidBy: string;
   amountCents: number;
   currency: string;
-  category: Database['public']['Enums']['expense_category'];
+  category: string;
   description: string;
   occurredOn: string;
-  splitMethod: Database['public']['Enums']['split_method'];
+  splitMethod: string;
+  shares: ShareInput[];
+}
+
+export interface UpdateExpenseInput {
+  expenseId: string;
+  amountCents: number;
+  currency: string;
+  category: string;
+  description: string;
+  occurredOn: string;
+  splitMethod: string;
   shares: ShareInput[];
 }
 
@@ -56,19 +64,24 @@ export async function createExpense(input: CreateExpenseInput): Promise<string> 
   return data as string;
 }
 
-export async function updateExpense(
-  expenseId: string,
-  input: ExpenseUpdate,
-): Promise<Expense> {
-  const { data, error } = await supabase
-    .from('expenses')
-    .update(input)
-    .eq('id', expenseId)
-    .select()
-    .single();
+/**
+ * Atomically update an expense and its shares via the update_expense RPC.
+ * Using an RPC ensures shares are deleted and re-inserted in the same transaction,
+ * preventing stale shares from causing incorrect balance calculations.
+ */
+export async function updateExpense(input: UpdateExpenseInput): Promise<void> {
+  const { error } = await supabase.rpc('update_expense', {
+    _expense_id: input.expenseId,
+    _amount_cents: input.amountCents,
+    _currency: input.currency,
+    _category: input.category,
+    _description: input.description,
+    _occurred_on: input.occurredOn,
+    _split_method: input.splitMethod,
+    _shares: JSON.stringify(input.shares),
+  });
 
   if (error) throw error;
-  return data as Expense;
 }
 
 export async function deleteExpense(expenseId: string): Promise<void> {

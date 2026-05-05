@@ -1,11 +1,10 @@
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState } from 'react';
 import { Sheet } from '@/components/ui/Sheet';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { Textarea } from '@/components/ui/Textarea';
 import { Button } from '@/components/ui/Button';
 import { SplitEditor } from './SplitEditor';
 import type { TripMember, ShareInput, SplitMethod } from '@/types/domain';
@@ -150,7 +149,6 @@ export function ExpenseForm({
             totalCents={amountCents}
             currency={currency}
             members={members}
-            value={shares}
             onChange={(newShares, method) => {
               setShares(newShares);
               setSplitMethod(method);

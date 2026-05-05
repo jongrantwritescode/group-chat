@@ -21,20 +21,29 @@ export async function fetchMembers(tripId: string): Promise<TripMember[]> {
   return data as unknown as TripMember[];
 }
 
+/**
+ * Invite a user to a trip by email.
+ * Returns the server-generated invite token so the UI can construct a shareable link.
+ */
 export async function inviteMember(
   tripId: string,
   email: string,
   role: TripRole,
   invitedBy: string,
-): Promise<void> {
-  const { error } = await supabase.from('trip_invites').insert({
-    trip_id: tripId,
-    email,
-    role,
-    invited_by: invitedBy,
-  });
+): Promise<string> {
+  const { data, error } = await supabase
+    .from('trip_invites')
+    .insert({
+      trip_id: tripId,
+      email,
+      role,
+      invited_by: invitedBy,
+    })
+    .select('token')
+    .single();
 
   if (error) throw error;
+  return data.token as string;
 }
 
 export async function updateMemberRole(

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useTripById } from '@/hooks/useTrips';
 import { useRealtimeTrip } from '@/hooks/useRealtimeTrip';
 import { useSession } from '@/hooks/useSession';
@@ -13,7 +13,6 @@ import { GuestsTab } from './GuestsTab';
 import { ExpensesTab } from './ExpensesTab';
 import { TasksTab } from './TasksTab';
 import { cn } from '@/lib/utils';
-import { useEffect } from 'react';
 
 type Tab = 'overview' | 'itinerary' | 'guests' | 'expenses' | 'tasks';
 
@@ -27,9 +26,8 @@ const TABS: { id: Tab; label: string }[] = [
 
 export function TripRoute() {
   const { tripId } = useParams<{ tripId: string }>();
-  const navigate = useNavigate();
   const { user } = useSession();
-  const { activeTab, setActiveTab, setActiveTripId } = useActiveTripStore();
+  const { setActiveTripId } = useActiveTripStore();
   const [tab, setTab] = useState<Tab>('overview');
 
   const { data: trip, isLoading, error } = useTripById(tripId!);

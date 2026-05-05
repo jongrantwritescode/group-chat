@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -37,7 +38,8 @@ const itemSchema = z
     { message: 'End time must be after start time', path: ['end_time'] },
   );
 
-type ItemFormValues = z.infer<typeof itemSchema>;
+// Exported so callers can type their handlers without casting
+export type ItemFormValues = z.infer<typeof itemSchema>;
 
 interface ItineraryItemFormProps {
   open: boolean;
@@ -58,6 +60,21 @@ export function ItineraryItemForm({
   tripStartDate,
   editingItem,
 }: ItineraryItemFormProps) {
+  const buildValues = (): Partial<ItemFormValues> => ({
+    category: 'activity',
+    day_date: tripStartDate ?? '',
+    ...defaultValues,
+    ...(editingItem && {
+      day_date: editingItem.day_date,
+      title: editingItem.title,
+      category: editingItem.category,
+      start_time: editingItem.start_time ?? '',
+      end_time: editingItem.end_time ?? '',
+      location: editingItem.location ?? '',
+      description: editingItem.description ?? '',
+    }),
+  });
+
   const {
     register,
     handleSubmit,
@@ -65,21 +82,14 @@ export function ItineraryItemForm({
     formState: { errors },
   } = useForm<ItemFormValues>({
     resolver: zodResolver(itemSchema),
-    defaultValues: {
-      category: 'activity',
-      day_date: tripStartDate ?? '',
-      ...defaultValues,
-      ...(editingItem && {
-        day_date: editingItem.day_date,
-        title: editingItem.title,
-        category: editingItem.category,
-        start_time: editingItem.start_time ?? '',
-        end_time: editingItem.end_time ?? '',
-        location: editingItem.location ?? '',
-        description: editingItem.description ?? '',
-      }),
-    },
+    defaultValues: buildValues(),
   });
+
+  // Reset form whenever the editing item changes so re-used sheets show correct values
+  useEffect(() => {
+    reset(buildValues());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingItem?.id]);
 
   function handleClose() {
     reset();

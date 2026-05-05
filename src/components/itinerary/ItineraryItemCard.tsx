@@ -1,4 +1,4 @@
-import { Clock, MapPin, Plane, Home, Utensils, Zap, Users, MoreHorizontal } from 'lucide-react';
+import { MapPin, Plane, Home, Utensils, Zap, Users, MoreHorizontal } from 'lucide-react';
 import type { ItineraryItem, ItineraryCategory } from '@/types/domain';
 import { formatTime } from '@/lib/date';
 import { cn } from '@/lib/utils';

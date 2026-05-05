@@ -1,27 +1,31 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CalendarDays, Users, Globe2, ChevronRight } from 'lucide-react';
 import type { Trip, TripMember } from '@/types/domain';
 import { formatDateRange } from '@/lib/date';
 import { coverUrl } from '@/api/trips';
-import { Badge, RoleBadge } from '@/components/ui/Badge';
-import { cn } from '@/lib/utils';
+import { RoleBadge } from '@/components/ui/Badge';
 
 interface TripCardProps {
   trip: Trip;
   members?: TripMember[];
+  /** Pre-computed member count from the list query — avoids N+1 member fetches */
+  memberCount?: number;
   currentUserId?: string;
 }
 
-export function TripCard({ trip, members = [], currentUserId }: TripCardProps) {
+export function TripCard({ trip, members = [], memberCount, currentUserId }: TripCardProps) {
   const navigate = useNavigate();
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   const currentMember = members.find((m) => m.user_id === currentUserId);
+  const displayCount = memberCount ?? members.length;
 
   useEffect(() => {
     if (trip.cover_image_path) {
-      coverUrl(trip.cover_image_path).then((url) => setImageUrl(url));
+      coverUrl(trip.cover_image_path)
+        .then((url) => setImageUrl(url))
+        .catch(() => setImageUrl(null));
     }
   }, [trip.cover_image_path]);
 
@@ -69,10 +73,10 @@ export function TripCard({ trip, members = [], currentUserId }: TripCardProps) {
             <CalendarDays size={15} />
             <span>{dateRange}</span>
           </div>
-          {members.length > 0 && (
+          {displayCount > 0 && (
             <div className="flex items-center gap-1.5 text-sm text-slate-500">
               <Users size={15} />
-              <span>{members.length} {members.length === 1 ? 'member' : 'members'}</span>
+              <span>{displayCount} {displayCount === 1 ? 'member' : 'members'}</span>
             </div>
           )}
         </div>

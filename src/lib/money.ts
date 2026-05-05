@@ -1,7 +1,7 @@
 import { dinero, toDecimal, add, subtract, multiply, allocate } from 'dinero.js';
 import type { Dinero } from 'dinero.js';
 
-// Currency definitions (inline to avoid @dinero.js/currencies dependency issues)
+// Currency definitions (inline — @dinero.js/currencies does not exist on npm)
 const currencies: Record<string, { code: string; base: number; exponent: number }> = {
   USD: { code: 'USD', base: 10, exponent: 2 },
   EUR: { code: 'EUR', base: 10, exponent: 2 },
@@ -47,10 +47,13 @@ export function formatCents(amountCents: number, currencyCode: string): string {
   return formatMoney(fromCents(amountCents, currencyCode));
 }
 
-/** Split an amount equally among n participants, distributing remainder */
-export function splitEqually(totalCents: number, count: number): number[] {
+/**
+ * Split an amount equally among n participants, distributing remainder to the first member.
+ * Uses the trip's actual currency to compute the correct minor-unit exponent.
+ */
+export function splitEqually(totalCents: number, count: number, currencyCode: string): number[] {
   if (count === 0) return [];
-  const currency = getCurrency('USD');
+  const currency = getCurrency(currencyCode);
   const total = dinero({ amount: totalCents, currency });
   const ratios = Array(count).fill(1) as number[];
   const shares = allocate(total, ratios);
@@ -64,12 +67,19 @@ export function splitEqually(totalCents: number, count: number): number[] {
   });
 }
 
-/** Split by percentage weights (must sum to 100) */
-export function splitByPercentage(totalCents: number, percentages: number[]): number[] {
+/**
+ * Split by percentage weights (must sum to 100).
+ * Uses the trip's actual currency to compute the correct minor-unit exponent.
+ */
+export function splitByPercentage(
+  totalCents: number,
+  percentages: number[],
+  currencyCode: string,
+): number[] {
   const sum = percentages.reduce((a, b) => a + b, 0);
   if (Math.abs(sum - 100) > 0.01) throw new Error('Percentages must sum to 100');
 
-  const currency = getCurrency('USD');
+  const currency = getCurrency(currencyCode);
   const total = dinero({ amount: totalCents, currency });
   // Convert percentages to integer ratios (multiply by 100 for precision)
   const ratios = percentages.map((p) => Math.round(p * 100));
