@@ -71,3 +71,11 @@ export default defineConfig([
   },
 ])
 ```
+
+## Development Setup
+
+1. Copy `.env.local.example` to `.env.local` and fill in your Supabase credentials
+2. Run `npm install`
+3. Run `npm run dev` for local web development
+4. Apply Supabase migrations: `supabase db push`
+5. For native builds: `npx cap add ios` / `npx cap add android`, then `npx cap open ios`

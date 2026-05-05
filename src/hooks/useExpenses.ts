@@ -5,12 +5,9 @@ import {
   updateExpense,
   deleteExpense,
   fetchBalances,
-  createSettlement,
   type CreateExpenseInput,
+  type UpdateExpenseInput,
 } from '@/api/expenses';
-import type { Database } from '@/types/database';
-
-type ExpenseUpdate = Database['public']['Tables']['expenses']['Update'];
 
 export function useExpenses(tripId: string) {
   return useQuery({
@@ -42,8 +39,7 @@ export function useCreateExpense(tripId: string) {
 export function useUpdateExpense(tripId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ expenseId, input }: { expenseId: string; input: ExpenseUpdate }) =>
-      updateExpense(expenseId, input),
+    mutationFn: (input: UpdateExpenseInput) => updateExpense(input),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['expenses', tripId] });
       qc.invalidateQueries({ queryKey: ['balances', tripId] });

@@ -1,4 +1,4 @@
-import { MoreVertical, LogOut, Shield } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import type { TripMember } from '@/types/domain';
 import { Avatar } from '@/components/ui/Avatar';
 import { RoleBadge, RSVPBadge } from '@/components/ui/Badge';

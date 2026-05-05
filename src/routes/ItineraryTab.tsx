@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
-import { useItinerary, useCreateItineraryItem, useUpdateItineraryItem, useDeleteItineraryItem } from '@/hooks/useItinerary';
+import { useItinerary, useCreateItineraryItem, useUpdateItineraryItem } from '@/hooks/useItinerary';
 import { ItineraryDayList } from '@/components/itinerary/ItineraryDayList';
-import { ItineraryItemForm } from '@/components/itinerary/ItineraryItemForm';
+import { ItineraryItemForm, type ItemFormValues } from '@/components/itinerary/ItineraryItemForm';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { useUIStore } from '@/stores/uiStore';
@@ -18,13 +18,12 @@ export function ItineraryTab({ tripId, currentUserId, tripStartDate }: Itinerary
   const { data: items, isLoading } = useItinerary(tripId);
   const createItem = useCreateItineraryItem(tripId);
   const updateItem = useUpdateItineraryItem(tripId);
-  const deleteItem = useDeleteItineraryItem(tripId);
   const { addToast } = useUIStore();
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ItineraryItem | undefined>();
 
-  async function handleSubmit(values: Parameters<typeof createItem.mutateAsync>[0]['input'] & { day_date: string; title: string; category: 'travel' | 'lodging' | 'food' | 'activity' | 'meeting' | 'other' }) {
+  async function handleSubmit(values: ItemFormValues) {
     try {
       if (editingItem) {
         await updateItem.mutateAsync({ itemId: editingItem.id, input: values });
@@ -35,7 +34,7 @@ export function ItineraryTab({ tripId, currentUserId, tripStartDate }: Itinerary
       }
       setSheetOpen(false);
       setEditingItem(undefined);
-    } catch (err) {
+    } catch {
       addToast('Failed to save item', 'error');
     }
   }
@@ -77,7 +76,7 @@ export function ItineraryTab({ tripId, currentUserId, tripStartDate }: Itinerary
           setSheetOpen(false);
           setEditingItem(undefined);
         }}
-        onSubmit={handleSubmit as any}
+        onSubmit={handleSubmit}
         loading={createItem.isPending || updateItem.isPending}
         editingItem={editingItem}
         tripStartDate={tripStartDate}

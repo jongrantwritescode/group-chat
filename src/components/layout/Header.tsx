@@ -1,4 +1,4 @@
-import React from 'react';
+import { type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -7,7 +7,7 @@ interface HeaderProps {
   title: string;
   showBack?: boolean;
   onBack?: () => void;
-  action?: React.ReactNode;
+  action?: ReactNode;
   className?: string;
 }
 

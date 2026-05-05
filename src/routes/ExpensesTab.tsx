@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, CreditCard } from 'lucide-react';
 import { useExpenses, useBalances, useCreateExpense } from '@/hooks/useExpenses';
-import { useSettlements, useCreateSettlement } from '@/hooks/useSettlements';
+import { useCreateSettlement } from '@/hooks/useSettlements';
 import { useTripMembers } from '@/hooks/useTripMembers';
 import { ExpenseList } from '@/components/expenses/ExpenseList';
 import { ExpenseForm } from '@/components/expenses/ExpenseForm';
@@ -10,7 +10,6 @@ import { SettlementSheet } from '@/components/expenses/SettlementSheet';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { useUIStore } from '@/stores/uiStore';
-import type { Database } from '@/types/database';
 
 interface ExpensesTabProps {
   tripId: string;
@@ -34,7 +33,7 @@ export function ExpensesTab({ tripId, currentUserId, currency }: ExpensesTabProp
       await createExpense.mutateAsync(values);
       addToast('Expense added', 'success');
       setExpenseFormOpen(false);
-    } catch (err) {
+    } catch {
       addToast('Failed to add expense', 'error');
     }
   }
@@ -49,7 +48,7 @@ export function ExpensesTab({ tripId, currentUserId, currency }: ExpensesTabProp
       await createSettlement.mutateAsync({ fromUser, toUser, amountCents, currency, note });
       addToast('Payment recorded', 'success');
       setSettlementOpen(false);
-    } catch (err) {
+    } catch {
       addToast('Failed to record payment', 'error');
     }
   }
@@ -114,7 +113,7 @@ export function ExpensesTab({ tripId, currentUserId, currency }: ExpensesTabProp
                 paidBy: values.paidBy,
                 amountCents: values.amountCents,
                 currency,
-                category: values.category as Database['public']['Enums']['expense_category'],
+                category: values.category,
                 description: values.description,
                 occurredOn: values.occurredOn,
                 splitMethod: values.splitMethod,

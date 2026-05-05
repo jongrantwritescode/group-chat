@@ -1,8 +1,6 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Map } from 'lucide-react';
 import { useTrips } from '@/hooks/useTrips';
-import { useTripMembers } from '@/hooks/useTripMembers';
 import { useSession } from '@/hooks/useSession';
 import { AppShell } from '@/components/layout/AppShell';
 import { Header } from '@/components/layout/Header';
@@ -72,6 +70,7 @@ export function TripsListRoute() {
               <TripCard
                 key={trip.id}
                 trip={trip}
+                memberCount={trip.member_count}
                 currentUserId={user?.id}
               />
             ))}

@@ -1,12 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { signInWithProvider } from '@/lib/auth';
 import { SSOButton } from '@/components/auth/SSOButton';
 import { Map } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 
 export function AuthRoute() {
-  const navigate = useNavigate();
   const { addToast } = useUIStore();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);

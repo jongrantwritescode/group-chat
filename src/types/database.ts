@@ -1,6 +1,9 @@
 // ============================================================
-// Database types — manually written to match the Supabase schema
-// In production, regenerate with: supabase gen types typescript --linked
+// Database types — manually written to match the Supabase schema.
+// Once a live Supabase project is connected, regenerate with:
+//   supabase gen types typescript --linked > src/types/database.ts
+// This will eliminate all `as unknown as T` casts in the API layer
+// and provide auto-updated types as the schema evolves.
 // ============================================================
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
@@ -376,6 +379,19 @@ export interface Database {
           _shares: string;
         };
         Returns: string;
+      };
+      update_expense: {
+        Args: {
+          _expense_id: string;
+          _amount_cents: number;
+          _currency: string;
+          _category: string;
+          _description: string;
+          _occurred_on: string;
+          _split_method: string;
+          _shares: string;
+        };
+        Returns: null;
       };
     };
     Enums: {

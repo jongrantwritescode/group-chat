@@ -47,7 +47,7 @@ export function Toaster() {
 
   return (
     <div
-      className="fixed bottom-20 left-0 right-0 z-[100] flex flex-col items-center gap-2 px-4 pb-safe"
+      className="fixed bottom-[calc(64px+env(safe-area-inset-bottom,0px)+8px)] left-0 right-0 z-[100] flex flex-col items-center gap-2 px-4"
       aria-live="polite"
     >
       {toasts.map((toast) => (

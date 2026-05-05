@@ -23,11 +23,8 @@ export function BalanceSummary({
     members.map((m) => [m.user_id, m.profile]),
   );
 
-  // Sort: positive (owed money) first, then negative
-  const sorted = [...balances].sort((a, b) => b.net_cents - a.net_cents);
-
-  // Compute who owes whom (simplified debt algorithm)
-  const debts = computeDebts(balances, members, currency);
+  // Compute who owes whom (simplified greedy debt algorithm)
+  const debts = computeDebts(balances);
 
   const myBalance = balances.find((b) => b.user_id === currentUserId);
 
@@ -102,12 +99,7 @@ interface Debt {
   amountCents: number;
 }
 
-function computeDebts(
-  balances: TripBalance[],
-  members: TripMember[],
-  _currency: string,
-): Debt[] {
-  // Simplified greedy algorithm
+function computeDebts(balances: TripBalance[]): Debt[] {
   const credits = balances
     .filter((b) => b.net_cents > 0)
     .map((b) => ({ userId: b.user_id, amount: b.net_cents }))

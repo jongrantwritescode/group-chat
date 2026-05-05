@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
-import type { Trip } from '@/types/domain';
 
 const CURRENCIES = [
   { value: 'USD', label: 'USD — US Dollar' },

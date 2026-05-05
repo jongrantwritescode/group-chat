@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
@@ -16,8 +15,13 @@ import { Toaster } from '@/components/ui/Toaster';
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <SupabaseSessionProvider>
-        <BrowserRouter>
+      {/*
+       * BrowserRouter wraps SupabaseSessionProvider so that if the provider
+       * ever needs to call useNavigate (e.g. on SIGNED_OUT events) it has
+       * access to the router context.
+       */}
+      <BrowserRouter>
+        <SupabaseSessionProvider>
           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<AuthRoute />} />
@@ -61,9 +65,9 @@ export default function App() {
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </BrowserRouter>
-        <Toaster />
-      </SupabaseSessionProvider>
+          <Toaster />
+        </SupabaseSessionProvider>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }

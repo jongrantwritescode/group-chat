@@ -1,4 +1,4 @@
-import { CheckCircle2, Circle, Clock, UserCircle2, CalendarDays } from 'lucide-react';
+import { CheckCircle2, Circle, CalendarDays } from 'lucide-react';
 import type { Task } from '@/types/domain';
 import { Avatar } from '@/components/ui/Avatar';
 import { formatDate } from '@/lib/date';
